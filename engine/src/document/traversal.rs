@@ -1,6 +1,21 @@
 //! Generic traversal over clips stored in scenes and overlay tracks.
 
-use super::{Clip, Project};
+use super::{Clip, Project, Scene};
+
+/// Compute the effective duration of a clip.
+///
+/// For scene layers, a duration `<= 0.0` fills the rest of the scene:
+/// `(scene.duration - clip.start).max(0.1)`. Overlay clips and clips without a
+/// parent scene do not inherit this rule and return their raw duration.
+pub fn effective_duration(clip: &Clip, scene: Option<&Scene>) -> f64 {
+    if clip.duration > 0.0 {
+        clip.duration
+    } else if let Some(scene) = scene {
+        (scene.duration - clip.start).max(0.1)
+    } else {
+        clip.duration
+    }
+}
 
 /// Find a clip anywhere in the project by id.
 pub fn find_clip<'a>(project: &'a Project, id: &str) -> Option<&'a Clip> {

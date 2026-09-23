@@ -31,6 +31,15 @@ pub(crate) fn make_pipeline(timeline: &ges::Timeline) -> Result<(ges::Pipeline, 
     Ok((pipeline, paintable))
 }
 
+/// Extract a user-facing error message from a GStreamer bus message, if it is an error.
+pub(crate) fn bus_message_error_summary(msg: &gst::Message) -> Option<String> {
+    use gst::MessageView;
+    match msg.view() {
+        MessageView::Error(err) => Some(err.error().to_string()),
+        _ => None,
+    }
+}
+
 pub(crate) fn start_paused(pipeline: &ges::Pipeline) -> Result<()> {
     if pipeline.set_state(gst::State::Paused).is_err() {
         if let Err(e) = pipeline.set_state(gst::State::Null) {
@@ -285,6 +294,36 @@ mod tests {
         // in #57 depended on this invariant holding).
         assert!(pipeline.query_position::<gst::ClockTime>().is_none());
         start_paused(&pipeline).expect("second preroll after Null");
+        let _ = pipeline.set_state(gst::State::Null);
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn bus_message_error_summary_extracts_error() {
+        init_once();
+        let msg = gst::message::Error::builder(gst::CoreError::Failed, "Could not activate sink").build();
+        let summary = bus_message_error_summary(&msg);
+        assert_eq!(summary.as_deref(), Some("Could not activate sink"));
+
+        let eos = gst::message::Eos::builder().build();
+        assert_eq!(bus_message_error_summary(&eos), None);
+    }
+
+    #[test]
+    fn pipeline_bus_receives_synthetic_error() {
+        let _guard = lock();
+        init_once();
+        let dir = std::env::temp_dir().join("dualcut-pipeline-test-bus-error");
+        std::fs::create_dir_all(&dir).unwrap();
+        let (project, base_dir) = empty_project(&dir);
+        let timeline = compile_project(&project, &base_dir).expect("compiles");
+        let (pipeline, _paintable) = make_pipeline(&timeline).expect("pipeline builds");
+        let bus = pipeline.bus().expect("pipeline has bus");
+        let msg = gst::message::Error::builder(gst::CoreError::Failed, "Could not activate sink").build();
+        bus.post(msg).expect("posting bus error");
+        let popped = bus.pop().expect("message on bus");
+        let summary = bus_message_error_summary(&popped);
+        assert_eq!(summary.as_deref(), Some("Could not activate sink"));
         let _ = pipeline.set_state(gst::State::Null);
         let _ = std::fs::remove_dir_all(&dir);
     }
