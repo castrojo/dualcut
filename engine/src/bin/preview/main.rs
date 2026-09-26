@@ -566,7 +566,7 @@ impl Editor {
                     let duration = project.duration();
                     {
                         let mut st = self.state.borrow_mut();
-                        st.pipeline = pipeline;
+                        st.pipeline = pipeline.clone();
                         st.duration = duration;
                     }
                     ui.seek.set_range(0.0, duration.max(0.1));
