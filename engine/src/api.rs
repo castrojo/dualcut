@@ -120,12 +120,8 @@ pub fn serve_file_api(path: PathBuf, port: u16) -> Result<()> {
                             _ => anyhow::bail!("clip {id:?} has no media"),
                         };
                         let base_dir = path.parent().unwrap_or_else(|| std::path::Path::new("."));
-                        let uri = if src.contains("://") {
-                            src
-                        } else {
-                            let abs = base_dir.join(&src).canonicalize().context("resolving media path")?;
-                            format!("file://{}", abs.display())
-                        };
+                        let uri = crate::media::resolve(&src, base_dir)
+                            .context("resolving media path")?;
                         let ranges = crate::silence::detect_silence_in_uri(&uri, threshold_db, min_duration)?;
                         let removed = crate::document::remove_silence(&mut p, &id, &ranges)?;
                         serde_json::json!({"ok": true, "removed": removed})

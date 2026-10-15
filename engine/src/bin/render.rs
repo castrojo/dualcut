@@ -96,7 +96,7 @@ fn main() -> Result<()> {
     if first == "proxy" {
         let media = args.next().context("usage: render proxy <media>")?;
         let abs = std::path::absolute(&media)?;
-        let uri = format!("file://{}", abs.display());
+        let uri = dualcut_engine::media::uri_from_path(&abs);
         let base = abs.parent().unwrap_or(std::path::Path::new(".")).to_path_buf();
         let out = dualcut_engine::thumbs::proxy_mp4(&base.join(".dualcut-cache"), &uri)?;
         println!("proxy -> {}", out.display());
@@ -144,7 +144,7 @@ fn main() -> Result<()> {
         out_abs.extension().and_then(|e| e.to_str()).unwrap_or("out")
     ));
     let _ = std::fs::remove_file(&part);
-    let uri = format!("file://{}", part.display());
+    let uri = dualcut_engine::media::uri_from_path(&part);
     pipeline
         .set_render_settings(&uri, &encoding_profile(profile_override.as_deref().unwrap_or(&out))?)
         .context("setting render settings")?;

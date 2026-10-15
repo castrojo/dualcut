@@ -100,7 +100,7 @@ fn main() -> Result<()> {
     pipeline.set_timeline(&timeline).context("attaching timeline")?;
     let out = std::path::absolute("out/scripted.mp4")?;
     pipeline
-        .set_render_settings(&format!("file://{}", out.display()), &mp4_profile())
+        .set_render_settings(&dualcut_engine::media::uri_from_path(&out), &mp4_profile())
         .context("render settings")?;
     pipeline.set_mode(ges::PipelineFlags::RENDER)?;
     println!("rendering scripted timeline -> {}", out.display());

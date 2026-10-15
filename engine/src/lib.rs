@@ -13,6 +13,7 @@ use gstreamer_editing_services as ges;
 
 pub mod document;
 pub mod api;
+pub mod media;
 #[cfg(feature = "preview")]
 pub mod thumbs;
 pub mod karaoke;
@@ -279,7 +280,7 @@ pub fn render_project_with_progress(
         out_abs.extension().and_then(|e| e.to_str()).unwrap_or("out")
     ));
     let _ = std::fs::remove_file(&part);
-    pipeline.set_render_settings(&format!("file://{}", part.display()), &encoding_profile(profile)?)?;
+    pipeline.set_render_settings(&media::uri_from_path(&part), &encoding_profile(profile)?)?;
     pipeline.set_mode(ges::PipelineFlags::RENDER)?;
 
     let bus = pipeline.bus().context("pipeline has no bus")?;
