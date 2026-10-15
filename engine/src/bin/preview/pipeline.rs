@@ -114,7 +114,7 @@ pub(crate) fn compile_project_with_warnings_inner(
 
 pub(crate) fn seek_to(pipeline: &ges::Pipeline, secs: f64) {
     let _ = pipeline.seek_simple(
-        gst::SeekFlags::FLUSH | gst::SeekFlags::KEY_UNIT,
+        gst::SeekFlags::FLUSH,
         gst::ClockTime::from_useconds((secs.max(0.0) * 1e6) as u64),
     );
 }
