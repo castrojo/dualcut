@@ -38,6 +38,7 @@ fn gpu() -> Option<&'static Gpu> {
             power_preference: wgpu::PowerPreference::HighPerformance,
             force_fallback_adapter: false,
             compatible_surface: None,
+            apply_limit_buckets: false,
         }))
         .ok()?;
         let (device, queue) =
@@ -255,7 +256,7 @@ fn render_shape_rgba_gpu(
     gpu.device
         .poll(wgpu::PollType::wait_indefinitely())
         .map_err(|e| anyhow::anyhow!("{e:?}"))?;
-    let data = slice.get_mapped_range();
+    let data = slice.get_mapped_range().context("mapping readback buffer")?;
 
     let mut pixels = Vec::with_capacity((width * height * 4) as usize);
     for y in 0..height {
