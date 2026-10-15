@@ -10,7 +10,7 @@ use std::collections::BTreeMap;
 
 mod traversal;
 
-pub use traversal::{find_clip, find_clip_mut, remove_clip};
+pub use traversal::{effective_duration, find_clip, find_clip_mut, remove_clip};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Project {
@@ -1599,5 +1599,53 @@ mod tests {
     fn parse_color_handles_rgb_and_argb() {
         assert_eq!(parse_color("#ffffff"), 0xffffffff);
         assert_eq!(parse_color("#80ffffff"), 0x80ffffff);
+    }
+
+    #[test]
+    fn effective_duration_table() {
+        let mut clip = Clip {
+            id: "test".into(),
+            start: 0.0,
+            duration: 0.0,
+            element: Element::Text {
+                text: "hi".into(),
+                font: default_font(),
+                color: default_color(),
+                align: None,
+                outline: None,
+                shadow: false,
+            },
+            transform: Default::default(),
+            animations: Vec::new(),
+            effects: Vec::new(),
+        };
+        let scene = Scene {
+            id: "scene-1".into(),
+            name: String::new(),
+            duration: 5.0,
+            layers: Vec::new(),
+            transition: None,
+        };
+
+        // (0.0, scene 5.0, start 0) → 5.0
+        assert_eq!(effective_duration(&clip, Some(&scene)), 5.0);
+
+        // (0.0, start 2.5) → 2.5
+        clip.start = 2.5;
+        assert_eq!(effective_duration(&clip, Some(&scene)), 2.5);
+
+        // (2.5 explicit) → 2.5
+        clip.duration = 2.5;
+        assert_eq!(effective_duration(&clip, Some(&scene)), 2.5);
+
+        // (0.0, start 4.95) → 0.1 (the .max(0.1) clamp)
+        clip.duration = 0.0;
+        clip.start = 4.95;
+        assert!((effective_duration(&clip, Some(&scene)) - 0.1).abs() < 1e-6);
+
+        // overlay clip → raw value
+        clip.duration = 0.0;
+        clip.start = 0.0;
+        assert_eq!(effective_duration(&clip, None), 0.0);
     }
 }

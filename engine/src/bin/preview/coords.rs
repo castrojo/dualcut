@@ -33,7 +33,7 @@ pub(crate) fn active_clips_at(project: &Project, time: f64) -> Vec<(String, f64,
         }
         for clip in &scene.layers {
             let local = time - offset;
-            let duration = if clip.duration > 0.0 { clip.duration } else { scene.duration - clip.start };
+            let duration = document::effective_duration(clip, Some(scene));
             if local >= clip.start && local < clip.start + duration {
                 let (x, y, w, h) = clip_box(project, clip);
                 out.push((clip.id.clone(), x, y, w, h));

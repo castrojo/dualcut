@@ -13,8 +13,8 @@
 use anyhow::{Context, Result};
 use dualcut_engine::{build_demo_timeline, document, document::Project, init, mapping};
 use document::{
-    detach_audio, find_clip, find_clip_mut, move_clip_to_lane, remove_clip, ripple_delete,
-    save_as_def, split_clip,
+    detach_audio, effective_duration, find_clip, find_clip_mut, move_clip_to_lane, remove_clip,
+    ripple_delete, save_as_def, split_clip,
 };
 use ges::prelude::*;
 use gstreamer as gst;
@@ -53,7 +53,7 @@ use coords::{
 
 mod pipeline;
 use pipeline::{
-    compile_project, compile_project_with_warnings_cache,
+    bus_message_error_summary, compile_project, compile_project_with_warnings_cache,
     make_pipeline, seek_to, start_paused,
 };
 
@@ -134,6 +134,7 @@ struct Ui {
     ruler: std::cell::RefCell<Option<gtk::DrawingArea>>,
     templates_list: gtk::ListBox,
     code_buffer: gtk::TextBuffer,
+    play_btn: gtk::Button,
 }
 
 pub(crate) struct Editor {
@@ -270,6 +271,7 @@ impl Editor {
                     eprintln!("pipeline preroll failed: {e:#}");
                     self.toast("Preview failed to load -- check the terminal for details");
                 }
+                self.drain_bus_errors(&pipeline);
                 seek_to(&pipeline, pos);
                 self.state.borrow_mut().pipeline = pipeline;
             }
@@ -388,6 +390,27 @@ impl Editor {
         let toast = adw::Toast::new(message);
         toast.set_timeout(5);
         ui.toasts.add_toast(toast);
+    }
+
+    /// Surface a GStreamer pipeline error: show toast, reset play button, and pause (#165).
+    pub(crate) fn handle_bus_error(self: &Rc<Self>, err_msg: &str) {
+        eprintln!("pipeline error: {err_msg}");
+        self.toast(err_msg);
+        if let Some(ui) = self.ui.borrow().as_ref() {
+            ui.play_btn.set_icon_name("media-playback-start-symbolic");
+        }
+        let _ = self.state.borrow().pipeline.set_state(gst::State::Paused);
+    }
+
+    /// Drain pending error messages from the pipeline bus (#165).
+    pub(crate) fn drain_bus_errors(self: &Rc<Self>, pipeline: &ges::Pipeline) {
+        if let Some(bus) = pipeline.bus() {
+            while let Some(msg) = bus.pop() {
+                if let Some(err_msg) = bus_message_error_summary(&msg) {
+                    self.handle_bus_error(&err_msg);
+                }
+            }
+        }
     }
 
     /// Surface compile warnings that were previously only visible in
@@ -543,7 +566,7 @@ impl Editor {
                     let duration = project.duration();
                     {
                         let mut st = self.state.borrow_mut();
-                        st.pipeline = pipeline;
+                        st.pipeline = pipeline.clone();
                         st.duration = duration;
                     }
                     ui.seek.set_range(0.0, duration.max(0.1));
@@ -564,6 +587,7 @@ impl Editor {
                         eprintln!("pipeline preroll failed: {e:#}");
                         self.toast("Preview failed to load -- check the terminal for details");
                     }
+                    self.drain_bus_errors(&pipeline);
                 }
                 self.rebuild_strip();
                 self.rebuild_inspector();
@@ -774,11 +798,7 @@ impl Editor {
             for (si, scene) in project.scenes.iter().enumerate() {
                 let Some(clip) = scene.layers.get(li) else { continue };
                 let offset = project.scene_offset(si);
-                let duration = if clip.duration > 0.0 {
-                    clip.duration
-                } else {
-                    (scene.duration - clip.start).max(0.1)
-                };
+                let duration = effective_duration(clip, Some(scene));
                 let scene_off = offset;
                 self.add_lane_clip(
                     &lane,
@@ -1877,8 +1897,32 @@ impl Editor {
             (row, s)
         };
 
+        let parent_scene = project.scenes.iter().find(|s| s.layers.iter().any(|c| c.id == clip.id));
+        let eff_dur = effective_duration(&clip, parent_scene);
+        let is_fill = clip.duration <= 0.0 && parent_scene.is_some();
+
         let (row_start, spin_start) = spin("Start", clip.start, 3600.0);
-        let (row_dur, spin_dur) = spin("Duration", clip.duration, 3600.0);
+        let (row_dur, spin_dur) = spin("Duration", eff_dur, 3600.0);
+        let fill_hint = if is_fill {
+            let h = gtk::Label::new(Some("fills scene"));
+            h.add_css_class("dim-label");
+            h.add_css_class("caption");
+            row_dur.append(&h);
+            Some(h)
+        } else {
+            None
+        };
+        let dur_edited = Rc::new(Cell::new(false));
+        {
+            let dur_edited = dur_edited.clone();
+            let fill_hint = fill_hint.clone();
+            spin_dur.connect_value_changed(move |_| {
+                dur_edited.set(true);
+                if let Some(h) = fill_hint.as_ref() {
+                    h.set_visible(false);
+                }
+            });
+        }
         let (row_op, spin_op) = spin("Opacity", clip.transform.opacity, 1.0);
         form.append(&row_start);
         form.append(&row_dur);
@@ -1954,11 +1998,16 @@ impl Editor {
             let this = self.clone();
             let id = clip.id.clone();
             let project = project.clone();
+            let dur_edited = dur_edited.clone();
             apply.connect_clicked(move |_| {
                 let mut project = project.clone();
                 if let Some(clip) = find_clip_mut(&mut project, &id) {
                     clip.start = spin_start.value();
-                    clip.duration = spin_dur.value();
+                    clip.duration = if is_fill && !dur_edited.get() {
+                        0.0
+                    } else {
+                        spin_dur.value()
+                    };
                     clip.transform.opacity = spin_op.value();
                     if let (
                         document::Element::Video { rate, .. } | document::Element::Audio { rate, .. },
@@ -3216,7 +3265,13 @@ fn build_ui(app: &adw::Application) -> Result<()> {
         let seek = seek.clone();
         let time_label = time_label.clone();
         let sel_canvas = sel_canvas.clone();
-        glib::timeout_add_local(std::time::Duration::from_millis(200), move || {
+        glib::timeout_add_local(std::time::Duration::from_millis(100), move || {
+            // Drain GStreamer bus errors so async pipeline failures surface to the user (#165).
+            {
+                let pipeline = editor.state.borrow().pipeline.clone();
+                editor.drain_bus_errors(&pipeline);
+            }
+
             // Redraw the selection overlay only while something is selected.
             if editor.state.borrow().selected.is_some() {
                 sel_canvas.queue_draw();
@@ -4309,7 +4364,9 @@ fn build_ui(app: &adw::Application) -> Result<()> {
             ruler: std::cell::RefCell::new(None),
             templates_list,
             code_buffer,
+            play_btn: play,
         });
+    editor.drain_bus_errors(&pipeline);
     editor.rebuild_strip();
     editor.rebuild_inspector();
     editor.rebuild_media();

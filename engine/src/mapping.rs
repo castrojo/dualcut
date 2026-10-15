@@ -172,9 +172,7 @@ pub fn compile_scaled(
         let offset = project.scene_offset(index);
         for (li, clip) in scene.layers.iter().enumerate() {
             let mut clip = clip.clone();
-            if clip.duration <= 0.0 {
-                clip.duration = (scene.duration - clip.start).max(0.1);
-            }
+            clip.duration = crate::document::effective_duration(&clip, Some(scene));
             add_clip(project, &slots[overlay_count + li], &clip, offset, base_dir, &mut warnings)
                 .with_context(|| format!("scene {:?} clip {:?}", scene.id, clip.id))?;
         }
