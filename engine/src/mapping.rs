@@ -300,7 +300,7 @@ fn add_clip(
             // down. Probing (see probe_discoverable's doc comment) still
             // matters separately: an undecodable file isn't a normal
             // error GES reports, it's a process abort.
-            let uri = to_uri(src, base_dir);
+            let uri = crate::media::resolve(src, base_dir);
             let ok = matches!(&uri, Ok(uri) if probe_discoverable(uri));
             if !ok {
                 let reason = match &uri {
@@ -353,7 +353,7 @@ fn add_clip(
             // Same reasoning as Video/Audio above: missing file or
             // undecodable format, both skipped with a warning rather than
             // failing the whole compile.
-            let uri = to_uri(src, base_dir);
+            let uri = crate::media::resolve(src, base_dir);
             let ok = matches!(&uri, Ok(uri) if probe_discoverable(uri));
             if !ok {
                 let reason = match &uri {
@@ -397,7 +397,7 @@ fn add_clip(
                 let cache = base_dir.join(".dualcut-cache");
                 match crate::vector::shape_png(&cache, *shape, fill, w, h) {
                     Ok(png) => {
-                        let uri = format!("file://{}", png.canonicalize()?.display());
+                        let uri = crate::media::uri_from_path(&png.canonicalize()?);
                         let media = ges::UriClip::new(&uri).context("shape image clip")?;
                         media.set_start(start);
                         media.set_duration(duration);
@@ -510,7 +510,7 @@ fn bake_masked_clip(
     let mut hasher = std::collections::hash_map::DefaultHasher::new();
     let source_desc = match &clip.element {
         Element::Video { src, .. } => {
-            let uri = to_uri(src, base_dir)?;
+            let uri = crate::media::resolve(src, base_dir)?;
             uri.hash(&mut hasher);
             format!("uridecodebin uri=\"{uri}\" name=d")
         }
@@ -891,17 +891,6 @@ fn substitute(clip: &Clip, args: &BTreeMap<String, String>) -> Clip {
         _ => {}
     }
     clip
-}
-
-fn to_uri(src: &str, base_dir: &std::path::Path) -> Result<String> {
-    if src.contains("://") {
-        return Ok(src.to_string());
-    }
-    let path = base_dir.join(src);
-    if !path.exists() {
-        bail!("media file not found: {}", path.display());
-    }
-    Ok(format!("file://{}", path.canonicalize()?.display()))
 }
 
 #[cfg(test)]

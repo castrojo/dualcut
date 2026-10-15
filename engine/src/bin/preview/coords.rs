@@ -112,11 +112,11 @@ pub(crate) fn failed_templates() -> &'static std::sync::Mutex<std::collections::
     FAILED.get_or_init(Default::default)
 }
 
+/// Thin preview-side wrapper over [`dualcut_engine::media::resolve`]:
+/// the preview skips what it cannot resolve instead of failing, so an
+/// unresolvable `src` is `None` rather than an error.
 pub(crate) fn media_uri(src: &str, base_dir: &std::path::Path) -> Option<String> {
-    if src.contains("://") {
-        return Some(src.to_string());
-    }
-    base_dir.join(src).canonicalize().ok().map(|p| format!("file://{}", p.display()))
+    dualcut_engine::media::resolve(src, base_dir).ok()
 }
 
 pub(crate) fn fx_hash(s: &str) -> u64 {
