@@ -66,6 +66,7 @@ fn main() -> Result<()> {
         power_preference: wgpu::PowerPreference::HighPerformance,
         force_fallback_adapter: false,
         compatible_surface: None,
+        apply_limit_buckets: false,
     }))
     .context("no wgpu adapter")?;
     println!("adapter: {}", adapter.get_info().name);
@@ -134,7 +135,7 @@ fn main() -> Result<()> {
     let slice = buffer.slice(..);
     slice.map_async(wgpu::MapMode::Read, |r| r.expect("map readback buffer"));
     device.poll(wgpu::PollType::wait_indefinitely()).map_err(|e| anyhow::anyhow!("{e:?}"))?;
-    let data = slice.get_mapped_range();
+    let data = slice.get_mapped_range().context("mapping readback buffer")?;
 
     let mut img = image::RgbaImage::new(WIDTH, HEIGHT);
     for y in 0..HEIGHT {
