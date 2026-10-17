@@ -1,9 +1,9 @@
 name: Publish Flatpak (tuna-os remote)
 
 # Build/publish body lives in tuna-os/.github's reusable publish-flatpak.yml
-# (tunaos#1183 recommendation #2). This file just keeps dualcut's own
-# trigger policy and its one piece of real variance: generating offline
-# cargo sources before the flatpak-builder build.
+# (tunaos#1183 recommendation #2). This repository pins that privileged
+# dependency and commits cargo-sources.json so release builds never execute a
+# mutable generator.
 
 on:
   push:
@@ -11,8 +11,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write
-  packages: write
+  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -20,12 +19,13 @@ concurrency:
 
 jobs:
   publish:
-    uses: tuna-os/.github/.github/workflows/publish-flatpak.yml@main
+    permissions:
+      contents: read
+      packages: write
+    uses: tuna-os/.github/.github/workflows/publish-flatpak.yml@e40806e92d94ddb2a5e9198945fd849e3b929eca
     with:
       app-id: org.tunaos.dualcut
       manifest-path: engine/build-aux/org.tunaos.dualcut.json
       repo-name: tuna-os/dualcut
-      generate-cargo-sources: true
-      cargo-lock-path: engine/Cargo.lock
-      cargo-sources-output: engine/build-aux/cargo-sources.json
-    secrets: inherit
+    secrets:
+      FLATPAK_INDEX_TOKEN: ${{ secrets.FLATPAK_INDEX_TOKEN }}

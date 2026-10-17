@@ -4,6 +4,11 @@ on:
   push:
     branches: [main]
   pull_request:
+  schedule:
+    - cron: '17 3 * * *'
+
+permissions:
+  contents: read
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -11,6 +16,7 @@ concurrency:
 
 jobs:
   test:
+    if: github.event_name != 'schedule'
     name: Lint, unit, and render smoke tests
     runs-on: ubuntu-latest
     container:
@@ -20,7 +26,7 @@ jobs:
       - name: Install git first
         run: dnf install -y -q git
 
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Schema/types in sync with the bundled agent skill (#49)
         # No diffutils in the bare container image yet (toolchain install
@@ -43,10 +49,11 @@ jobs:
             gstreamer1-plugins-good gstreamer1-plugins-bad-free \
             gstreamer1-plugins-base-tools gstreamer1-plugins-good-extras \
             gstreamer1-plugin-libav \
-            mesa-vulkan-drivers python3-pillow xorg-x11-server-Xvfb xset xz
+            mesa-vulkan-drivers python3-pillow python3-pip \
+            xorg-x11-server-Xvfb xset xz
           git config --global --add safe.directory "$(pwd)"
 
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
         with:
           workspaces: engine
 
@@ -57,6 +64,25 @@ jobs:
       - name: Unit tests
         working-directory: engine
         run: cargo test --all-features
+      - name: Verify committed offline cargo sources
+        run: |
+          python3 -m pip install --break-system-packages \
+            aiohttp==3.14.5 toml==0.10.2 tomlkit==0.15.2
+          curl -fsSLo /tmp/flatpak-cargo-generator.py \
+            https://raw.githubusercontent.com/flatpak/flatpak-builder-tools/737c0085912f9f7dabf9341d4608e2a77a51a73a/cargo/flatpak-cargo-generator.py
+          python3 /tmp/flatpak-cargo-generator.py engine/Cargo.lock \
+            -o /tmp/cargo-sources.json
+          python3 - <<'PY'
+          from pathlib import Path
+
+          expected = Path("engine/build-aux/cargo-sources.json").read_bytes()
+          generated = Path("/tmp/cargo-sources.json").read_bytes()
+          if expected != generated:
+              raise SystemExit(
+                  "engine/build-aux/cargo-sources.json is stale; regenerate it "
+                  "with the pinned flatpak-cargo-generator"
+              )
+          PY
 
       - name: Build release render binary
         working-directory: engine
@@ -72,7 +98,24 @@ jobs:
       - name: App start smoke (headless)
         run: |
           Xvfb :95 -screen 0 1280x800x24 &
-          sleep 2
+          xvfb_pid=$!
+          trap 'kill "$xvfb_pid" 2>/dev/null || true' EXIT
+
+          for attempt in $(seq 1 30); do
+            if DISPLAY=:95 xset q >/dev/null 2>&1; then
+              break
+            fi
+            if ! kill -0 "$xvfb_pid" 2>/dev/null; then
+              echo "Xvfb exited before display :95 became ready"
+              exit 1
+            fi
+            sleep 1
+          done
+          DISPLAY=:95 xset q >/dev/null 2>&1 || {
+            echo "Xvfb display :95 was not ready after 30 seconds"
+            exit 1
+          }
+
           set +e
           GDK_BACKEND=x11 WAYLAND_DISPLAY= DISPLAY=:95 \
             DBUS_SESSION_BUS_ADDRESS="unix:path=/nonexistent" \
@@ -87,3 +130,44 @@ jobs:
             exit 1
           }
           echo "app walked through all UI states cleanly"
+  coverage:
+    name: Nightly code coverage
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    container:
+      image: quay.io/fedora/fedora:45
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Install git first
+        run: dnf install -y -q git
+
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Install toolchain + runtime
+        run: |
+          dnf install -y -q cargo rust clang-devel pkgconf-pkg-config \
+            gtk4-devel libadwaita-devel gstreamer1-devel \
+            gstreamer1-plugins-base-devel gst-editing-services-devel \
+            gstreamer1-plugins-good gstreamer1-plugins-bad-free \
+            gstreamer1-plugins-base-tools gstreamer1-plugins-good-extras \
+            gstreamer1-plugin-libav mesa-vulkan-drivers python3-pillow xz
+          git config --global --add safe.directory "$(pwd)"
+
+      - uses: Swatinem/rust-cache@6323deb102c322ba6fcbdcafc7e3dddab59af2b6 # v2
+        with:
+          workspaces: engine
+
+      - uses: taiki-e/install-action@671164c891d3e20f5b8ece04798d0154d1262d65 # cargo-llvm-cov
+
+      - name: Generate coverage report
+        working-directory: engine
+        run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@0fb7174895f61a3b6b78fc075e0cd60383518dac # v5
+        with:
+          files: engine/lcov.info
+          fail_ci_if_error: true
+          use_oidc: true
