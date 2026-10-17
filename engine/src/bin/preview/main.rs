@@ -66,6 +66,21 @@ use skills::{
 mod export;
 use export::show_export_dialog;
 
+/// UI state management and widget rebuilding.
+/// Organizes all GTK widget construction, rebuilding, and state
+/// management for the editor's UI components.
+mod ui_manager;
+
+/// Document and project lifecycle management.
+/// Organizes document persistence, history tracking, undo/redo,
+/// and project-level operations.
+mod document_manager;
+
+/// Media library management.
+/// Organizes media file operations: importing, adding to library,
+/// thumbnail generation, proxy transcoding, and templates.
+mod library_manager;
+
 const DEFAULT_PPS: f64 = 42.0;
 /// Fixed width of a timeline lane's icon+label+toggles column. Shared by
 /// every lane row and the ruler's leading spacer so the ruler's time
