@@ -23,7 +23,7 @@ mod tests {
     use super::*;
 
     fn demo() -> Project {
-        Project::from_json(include_str!("../examples/demo-project.json")).unwrap()
+        Project::from_json(include_str!("../../examples/demo-project.json")).unwrap()
     }
 
     #[test]

@@ -17,4 +17,4 @@ in-app and over HTTP; it is never the persisted format.
   hot reload is safe (no code execution on load).
 - Generative workflows still work: generate with TS, persist as JSON.
 - The document schema is versioned API surface: `.d.ts` + JSON Schema
-  ship in-repo and must move with `document.rs`.
+  ship in-repo and must move with the document model under `engine/src/document/`.
