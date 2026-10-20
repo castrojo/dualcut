@@ -6,7 +6,7 @@ editing it. Domain glossary: CONTEXT.md. Types: engine/schema/.
 
 The Rust engine in `engine/` uses document model v2 — **scenes** (sequential
 narrative spine) + **overlays** (tracks crossing scene cuts) + **defs**
-(reusable parameterised compositions). Full types: `engine/src/document.rs`.
+(reusable parameterised compositions). Full types: `engine/src/document/mod.rs`.
 
 ## HTTP ops (POST /op)
 

@@ -5,7 +5,7 @@ When these words appear in code or issues, they mean exactly this.
 
 **Project (document)** — the single JSON file that fully describes a video.
 The only source of truth; every surface (app, agents, scripts) edits it.
-Types: `engine/src/document.rs` (Rust), `engine/schema/dualcut.d.ts` (TS),
+Types: `engine/src/document/mod.rs` (Rust), `engine/schema/dualcut.d.ts` (TS),
 `engine/schema/dualcut.schema.json` (JSON Schema).
 
 **Scene** — one beat of the narrative spine. Scenes are strictly

@@ -1,6 +1,6 @@
 /**
  * dualcut project document — TypeScript declarations.
- * Mirrors engine/src/document.rs (the source of truth).
+ * Mirrors engine/src/document/mod.rs (the source of truth).
  *
  * Scripts POSTed to the engine's /script endpoint must export:
  *   export function edit(project: Project): Project
