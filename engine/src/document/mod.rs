@@ -13,6 +13,7 @@ pub use model::*;
 pub use ops::*;
 pub use rate_ramp::expand_rate_ramp;
 pub use traversal::{effective_duration, find_clip, find_clip_mut, remove_clip};
+#[cfg(test)]
 pub(crate) use model::{default_color, default_font};
 
 #[cfg(test)]

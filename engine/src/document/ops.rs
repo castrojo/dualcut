@@ -1,7 +1,7 @@
 //! Timeline and document mutation operations.
 use anyhow::{bail, Result};
 use super::{
-    ease, find_clip, find_clip_mut, Anim, AnimProperty, Clip, CompDef, Element, Keyframe,
+    ease, find_clip, find_clip_mut, Anim, Clip, CompDef, Element, Keyframe,
     OverlayTrack, Project, Transform,
 };
 
