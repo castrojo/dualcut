@@ -44,7 +44,8 @@ Read these — they are short and will save you (and reviewers) time:
 
 | Path | What lives here |
 |---|---|
-| `engine/` | The Rust engine: document model (`engine/src/document.rs`), rendering (GStreamer Editing Services), the HTTP server, the GTK4/libadwaita UI |
+| `engine/` | The Rust engine: document model (`engine/src/document/mod.rs`), rendering (GStreamer Editing Services), the HTTP server, the GTK4/libadwaita UI |
+| `engine/src/document/` | Document schema and timeline boundaries: `model.rs`, `validation.rs`, `ops.rs`, `rate_ramp.rs`, and `traversal.rs` |
 | `engine/schema/` | The canonical document schema: `dualcut.d.ts` (TS types) + `dualcut.schema.json` (JSON Schema) |
 | `skills/dualcut/references/` | Bundled copies of the schema used by the agent skill — **must stay byte-identical** to `engine/schema/` (CI enforces this) |
 | `docs/` | `USER_GUIDE.md` (user documentation), `guide/` (screenshots), `recipes/`, `adr/` |
