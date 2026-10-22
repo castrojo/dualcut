@@ -20,7 +20,7 @@ jobs:
       - name: Install git first
         run: dnf install -y -q git
 
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
 
       - name: Schema/types in sync with the bundled agent skill (#49)
         # No diffutils in the bare container image yet (toolchain install
@@ -46,7 +46,7 @@ jobs:
             mesa-vulkan-drivers python3-pillow xorg-x11-server-Xvfb xset xz
           git config --global --add safe.directory "$(pwd)"
 
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@e9d7b9f1e587218970671bac74e5511ed9506e6a # v2
         with:
           workspaces: engine
 

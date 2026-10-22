@@ -34,7 +34,7 @@ jobs:
       image: ghcr.io/flathub-infra/flatpak-github-actions:gnome-50
       options: --privileged
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Generate offline cargo sources
         run: |
@@ -45,7 +45,7 @@ jobs:
             -o engine/build-aux/cargo-sources.json
 
       - name: Build bundle
-        uses: flatpak/flatpak-github-actions/flatpak-builder@v6.8
+        uses: flatpak/flatpak-github-actions/flatpak-builder@aa777012a985fe1b1fd3e66ea2173609cf0c9a70 # v6.8
         with:
           bundle: ${{ matrix.bundle }}
           manifest-path: engine/build-aux/org.tunaos.dualcut.json
@@ -54,7 +54,7 @@ jobs:
 
       - name: Attach bundle to release
         if: startsWith(github.ref, 'refs/tags/')
-        uses: softprops/action-gh-release@v3
+        uses: softprops/action-gh-release@5113cdc90fd4d541c801c55356214017bf5ae34b # v3
         with:
           files: ${{ matrix.bundle }}
           # Only one matrix leg should (re)generate release notes, else
@@ -75,7 +75,7 @@ jobs:
       - name: Install git first
         run: dnf install -y -q git
 
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: main
 
@@ -90,7 +90,7 @@ jobs:
             python3-pillow xz
           git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
-      - uses: Swatinem/rust-cache@v2
+      - uses: Swatinem/rust-cache@e9d7b9f1e587218970671bac74e5511ed9506e6a # v2
         with:
           workspaces: engine
 

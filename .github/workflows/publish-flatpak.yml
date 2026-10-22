@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   publish:
-    uses: tuna-os/.github/.github/workflows/publish-flatpak.yml@main
+    uses: tuna-os/.github/.github/workflows/publish-flatpak.yml@f835d4a4cdb18746e9b8abbc07defcef796a30a1 # tuna-os/.github@main
     with:
       app-id: org.tunaos.dualcut
       manifest-path: engine/build-aux/org.tunaos.dualcut.json
