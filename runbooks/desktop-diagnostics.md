@@ -75,15 +75,15 @@ GST_DEBUG=3,ges:5 flatpak run org.tunaos.dualcut
 ## Failure Mode 2: HTTP Agent API Connection Refused / Timeout
 
 * **Symptom**: External scripts or HTTP clients fail to communicate with Dualcut (`Connection refused`).
-* **Root Cause**: Embedded API server disabled, port collision on `8080`, or local firewall rules.
+* **Root Cause**: Embedded API server disabled, port collision on `7357`, or local firewall rules.
 * **Diagnostic Steps**:
   1. Check if the port is bound:
      ```bash
-     ss -tuln | grep 8080
+     ss -tuln | grep 7357
      ```
   2. Test health endpoint:
      ```bash
-     curl -i http://127.0.0.1:8080/status
+     curl -i http://127.0.0.1:7357/status
      ```
 * **Remediation**: Reconfigure API server port in preferences or launch with `--api-port=<PORT>`.
 
