@@ -28,6 +28,9 @@ on:
       - ".github/workflows/screenshots.yml"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 concurrency:
   group: screenshots-${{ github.ref }}
   cancel-in-progress: true
@@ -38,8 +41,6 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: quay.io/fedora/fedora:45
-    permissions:
-      contents: write
     steps:
       # checkout degrades to a tarball without git in the container.
       - name: Install git first
