@@ -110,6 +110,122 @@ fails if they drift.
 - Recipes (e.g. auto-captions) live in `docs/recipes/`.
 - Architectural decisions go in `docs/adr/`.
 
+## Testing
+
+Two layers, both enforced in CI (`.github/workflows/ci.yml` — the authoritative
+list of what blocks a merge). Run them before you push.
+
+### Unit tests — `cargo test`
+
+The unit tests live **inline**, in `#[cfg(test)] mod tests` blocks inside the
+`engine/src/*.rs` file for the thing they cover (document model in
+`document.rs`, the HTTP API in `api.rs`, mapping in `mapping.rs`, …). There is
+no separate `tests/` Rust crate for them — 131 tests across the crate today.
+
+```sh
+cd engine && cargo test --all-features
+```
+
+Run one in isolation while iterating: `cargo test --all-features document::tests::detach_audio`.
+
+These are the right place for **document-model mutation** and **HTTP API
+contract** tests — anything that is pure logic and needs no renderer:
+
+```rust
+// engine/src/document.rs — mutate a document, assert the new state
+#[test]
+fn detach_audio_silences_video_and_adds_overlay_clip() {
+    let mut p = demo();
+    let new_id = detach_audio(&mut p, "media-ball").expect("detaches");
+    match &find_clip(&p, "media-ball").unwrap().element {
+        Element::Video { volume, .. } => assert_eq!(*volume, 0.0),
+        _ => panic!("still a video clip"),
+    }
+    let audio = find_clip(&p, &new_id).unwrap();
+    assert_eq!(audio.start, 3.0); // scene offset 3.0 + clip start 0
+    assert!(matches!(audio.element, Element::Audio { .. }));
+    assert!(p.validate().is_ok());
+}
+```
+
+```rust
+// engine/src/api.rs — drive the HTTP surface over a real socket, assert the contract
+#[test]
+fn op_split_mutates_the_project_and_returns_a_new_id() {
+    let path = spawn_server(port);
+    let (status, body) = http(port, "POST", "/op", r#"{"op":"split","id":"c1","at":1.0}"#);
+    assert_eq!(status, 200);
+    assert!(body.contains(r#""ok":true"#) && body.contains("new_id"));
+    let on_disk = Project::from_json(&std::fs::read_to_string(&path).unwrap()).unwrap();
+    assert_eq!(on_disk.scenes[0].layers.len(), 2, "split should produce two clips");
+}
+```
+
+### Render smoke tests — `tests/smoke.sh`
+
+`cargo test` can't catch a render regression (a missing encoder, an effect that
+does nothing, a keying artifact), so `tests/smoke.sh` renders real projects with
+the release binary and inspects the **output**: it decodes frames to PNG and
+checks pixel values with Pillow, decodes audio to raw and checks amplitude, and
+asserts every export profile produces a nonempty file.
+
+```sh
+cd engine && cargo build --release --features vector   # produces target/release/render
+../tests/smoke.sh engine/target/release/render          # or: tests/smoke.sh <path-to-render>
+```
+
+The render-validation pattern each case follows:
+
+1. write a tiny project JSON (see the heredocs in `tests/smoke.sh`),
+2. render it: `"$BIN" in.json out.webm webm`,
+3. extract the part you care about (`gst-launch-1.0 … ! pngenc` for a frame,
+   `! audioconvert ! 'audio/x-raw,format=F32LE' ! filesink` for samples),
+4. assert on the extracted bytes with Python (`PIL.Image` for pixels, `struct`
+   for audio).
+
+```python
+# chromakey: the keyed pixel must no longer be green — the blue background shows through
+r, g, b = px[140, 90]
+assert g < 150 or b > 100, f"keyed area still green: {(r,g,b)}"
+```
+
+### Coverage
+
+There is no hard numeric coverage target. The bar is *regression memory*: add a
+test wherever a bug has already happened or could recur silently — an effect
+that renders without doing anything, an op that corrupts the document, an API
+route that 500s instead of 400s. Unit tests for pure logic, render smoke tests
+for anything that produces pixels or audio. If you changed rendering, extend
+`tests/smoke.sh`; if you changed logic, add an inline `#[test]`.
+
+### CI — what blocks a merge
+
+`.github/workflows/ci.yml` runs on every push to `main` and on every PR, on a
+bare Fedora 45 container: schema-in-sync check, clippy (`-D warnings`), unit
+tests, release render build, the render smoke suite, and a headless app-start
+walkthrough. All of them must pass. The `ste.yml` workflow runs the same suite
+under the Flatpak/GES build.
+
+### Debugging CI failures locally
+
+Reproduce the same job locally:
+
+```sh
+cd engine
+cargo clippy --all-features -- -D warnings   # clippy warnings are errors
+cargo test --all-features                     # unit tests
+cargo build --release --features vector
+../tests/smoke.sh engine/target/release/render
+```
+
+The render smoke suite is the one that most often differs between "green" and
+"red" — if it fails in CI but not locally (or vice versa), it is almost always
+a missing GStreamer plugin/encoder in your environment, not a code bug: match the
+package list in `ci.yml` (see *Setting up a dev environment*) and re-run. A
+smoke test that flakes on timing or GPU-dependent pixel thresholds should be
+made deterministic (fixed seed, tolerance, or a non-GPU path) rather than
+ignored.
+
 ## Code of conduct
 
 Be respectful and constructive. Follow the same norms as the rest of the
