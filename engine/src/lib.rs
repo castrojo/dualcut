@@ -12,6 +12,7 @@ use gstreamer_pbutils as gst_pbutils;
 use gstreamer_editing_services as ges;
 
 pub mod document;
+pub mod schema;
 pub mod api;
 pub mod media;
 #[cfg(feature = "preview")]
