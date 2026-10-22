@@ -140,3 +140,10 @@ when edited on disk, an HTTP API listens on port 7357, and TypeScript
 scripts (`export function edit(p: Project): Project`) run from the
 Script tab or the API. See [AGENTS.md](../AGENTS.md) for the document
 format and [CONTEXT.md](../CONTEXT.md) for the domain glossary.
+
+## Getting help
+
+Something not working? [docs/TROUBLESHOOTING.md](TROUBLESHOOTING.md) covers the
+common cases — codec and GStreamer errors, slow scrubbing or stuttering
+preview, the HTTP API on port 7357, media that won't import, and export
+failures — with diagnostic commands and step-by-step fixes.

@@ -12,6 +12,7 @@ HTTP API for agents) — every surface stays in sync while the app runs.
 ![dualcut editor](docs/screenshot.png)
 
 **[📘 User Guide](docs/USER_GUIDE.md)** — screenshots regenerated automatically on every release.
+**[🔧 Troubleshooting](docs/TROUBLESHOOTING.md)** — fix common codec, performance, API, and export problems.
 
 **Install (Flatpak, via the TunaOS remote):**
 
