@@ -5,13 +5,13 @@ This document details the operational readiness, logging infrastructure, diagnos
 ## Executive Summary
 
 - **Component Name**: Dualcut (`org.tunaos.dualcut`)
-- **Architecture**: Rust-based GNOME video editor built with GTK4, Libadwaita, GStreamer Editing Services (GES), and Vello. Includes an embedded HTTP API server for agentic automation and script execution.
-- **Maintenance Status**: Active (with development focus transitioning to `shrimply` for new features).
+- **Architecture**: GNOME video editor in Rust, built with GTK4, Libadwaita, GStreamer (GES), and Vello. It also embeds an HTTP API server for agentic automation and script execution.
+- **Maintenance Status**: Active (development moved to `shrimply` for new features).
 - **Distribution**: Flatpak (TunaOS OCI registry and direct releases).
 
 ## Telemetry & Data Policy
 
-**No external telemetry backends are configured or authorized.** All application diagnostics and session logs remain strictly local. The system is designed with privacy-first observability:
+**This project configures and authorizes no external telemetry backends.** All application diagnostics and session logs remain strictly local. This design keeps privacy-first observability:
 
 - HTTP API is bound exclusively to `127.0.0.1` (localhost)
 - No external metrics export or remote telemetry transmission
@@ -20,12 +20,12 @@ This document details the operational readiness, logging infrastructure, diagnos
 
 ### Future Telemetry Considerations
 
-Should an operational backend be designated in the future, the following architecture is recommended:
+If the team designates an operational backend in the future, we recommend the following architecture:
 
-1. **OpenTelemetry Rust Tracing** (`tracing-opentelemetry`):
-   - Instrument long-running tasks: project rendering, silence detection, script execution
+1. **OpenTelemetry via Rust `tracing`** (`tracing-opentelemetry`):
+   - Instrument tasks that run for a long time: project render, silence detection, script execution
    - Use bounded span attributes (project ID hashes, clip format, pipeline state transitions)
-   - **Never** export raw user content or file paths
+   - **Never** export a user's raw content or file paths
 
 2. **Metrics Collection**:
    - Expose operational metrics (export duration, frames rendered, pipeline init latency) only via local, pull-based endpoints (e.g., `/metrics` on localhost)
@@ -35,7 +35,7 @@ Should an operational backend be designated in the future, the following archite
 
 ### Systemd Journal & Flatpak Logs
 
-When running as a Flatpak, session logs flow through standard output/stderr to systemd journal:
+When the Flatpak runs, session logs flow through standard output/stderr to the systemd journal:
 
 ```bash
 # Stream live logs for Dualcut
@@ -47,7 +47,7 @@ journalctl --user-unit=org.tunaos.dualcut --since "1 hour ago" -p err
 
 ### GStreamer & GLib Debug Logging
 
-GStreamer pipelines emit rich diagnostic channels via environment variables:
+GStreamer pipelines send many diagnostic channels through environment variables:
 
 ```bash
 # Debug GStreamer Editing Services (GES) and video rendering
@@ -80,7 +80,7 @@ While the API server runs (default port 7357):
 
 ### GStreamer Pipeline Issues
 
-Use environment variable debugging to isolate media encoding/decoding problems:
+Use environment variable debugging to isolate media encode/decode problems:
 
 ```bash
 # Enable all GStreamer debugging
@@ -92,11 +92,11 @@ gst-inspect-1.0 | grep -E 'h264|vp8|aac|vorbis'
 
 ### Proxy Media Cache
 
-Proxy media is cached in `.dualcut-cache/` within the project directory:
-- Safe to delete; will be regenerated on next preview
-- Reduces timeline scrubbing latency for large videos
+Proxy media lives in `.dualcut-cache/` inside the project directory:
+- Safe to delete; the build regenerates it on the next preview
+- Reduces the time it takes to scrub large videos
 - Disable with *Preferences → Use proxy media*
 
 ### Deprecation Guidance
 
-Critical security and crash fixes are maintained in Dualcut. For new features, evaluate against [shrimply](https://github.com/soirihiroka/shrimply) — the active development project.
+The team maintains its important security and crash fixes in Dualcut. For new features, evaluate against [shrimply](https://github.com/soirihiroka/shrimply) — the active development project.
