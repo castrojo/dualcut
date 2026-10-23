@@ -1,10 +1,8 @@
 # dualcut
 
-> **Deprecated:** Development has moved to [shrimply](https://github.com/soirihiroka/shrimply), which is the recommended project for new work. This repository is retained for its history and existing releases; please port useful ideas here rather than starting new feature work in dualcut.
+> **Deprecated:** Development has moved to [shrimply](https://github.com/soirihiroka/shrimply), the recommended project for new work. We keep this repository for its history and its releases. Port useful ideas to shrimply; do not start new feature work in dualcut.
 
-A GNOME video editor with **dual usage**: edit manually (scene timeline +
-inspector) or programmatically (live JSON document, TypeScript scripts,
-HTTP API for agents) — every surface stays in sync while the app runs.
+A GNOME video editor with **dual usage**: edit by hand or by program. Every surface stays in sync while the app runs.
 
 > Concept and spec by **[KiKaraage](https://github.com/KiKaraage)** (main author).
 > Implementation built with Claude Code.
@@ -25,7 +23,7 @@ flatpak run org.tunaos.dualcut ~/Videos/myproject.json
 Updates land automatically (`flatpak update`) whenever a new `v*` tag ships.
 
 <details>
-<summary>Install a specific release bundle directly (no remote)</summary>
+<summary>Install one release bundle without a remote</summary>
 
 ```sh
 # x86_64
@@ -51,10 +49,10 @@ Never post account credentials or API keys in issues or pull requests.
 
 ## How it works
 
-One JSON **project document** is the single source of truth —
-**scenes** (sequential narrative spine) + **overlays** (tracks that cross
-scene cuts) + **defs** (reusable parameterised templates). Rendering is
-GStreamer Editing Services; shapes draw on the GPU via Vello; the UI is
+One JSON **project document** is the single source of truth. It holds
+**scenes** (sequential narrative spine), **overlays** (tracks that cross
+scene cuts), and **defs** (reusable parameterised templates). The engine
+edits with GStreamer (GES); shapes draw on the GPU via Vello; the UI is
 GTK4/libadwaita.
 
 | Surface | What | Sync |
@@ -84,13 +82,13 @@ for the canonical dependency list.
 
 ## Features
 
-- Scene-based editing with crossfade transitions and overlay tracks
+- Edit scenes with crossfade transitions and overlay tracks
 - Text, video, audio, image clips + GPU vector shapes (rect, circle,
   ellipse, star, polygon, line, arrow)
 - Tweened animations (x/y/opacity, easing) compiled to GStreamer control sources
 - Reusable parameterised templates (lower third, title card, caption built in)
 - Detach audio, undo/redo, multi-select, first-frame thumbnails
-- TypeScript scripting in-app and over HTTP (`export function edit(p) {…}`)
+- Write TypeScript scripts in-app and over HTTP (`export function edit(p) {…}`)
 - MP4 (H.264/AAC) and WebM (VP8/Vorbis) export
 - Releases: every `v*` tag auto-builds the Flatpak (`scripts/release.sh`)
 

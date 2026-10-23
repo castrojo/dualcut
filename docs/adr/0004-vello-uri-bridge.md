@@ -3,9 +3,7 @@
 Date: 2026-07-18 · Status: accepted
 
 ## Context
-Live per-frame vector rendering needs a GStreamer source GES can use, but
-the GES Rust bindings only expose Formatter subclassing — no
-GESSource subclasses.
+Live per-frame vector output needs a GStreamer source GES can use, but the Rust bindings for GES expose only Formatter subclasses, not GESSource subclasses.
 
 ## Decision
 `vellosrc` is a `GstPushSrc` subclass registered with a `vello://` URI
@@ -15,8 +13,5 @@ URIs like `vello://star?fill=%23ffd700&w=220&h=220&spin=1`. Static
 
 ## Consequences
 - Any document `video` clip can point at a live vector source today.
-- Shape parameters live in the URI; animating them per-frame means
-  extending vellosrc properties, not the document mapping.
-- One shared wgpu device + Vello renderer (see `vector.rs`) serves both
-  the PNG path and vellosrc; renderer reuse is what makes per-frame
-  rendering affordable.
+- Shape parameters live in the URI; to animate them per-frame, extend vellosrc properties, not the document mapping.
+- A shared wgpu device and one Vello renderer (see `vector.rs`) serve both the PNG path and vellosrc. This renderer reuse makes per-frame output affordable.

@@ -2,12 +2,10 @@
 
 > **Deprecation notice:** New development has moved to
 > [shrimply](https://github.com/soirihiroka/shrimply). Please port useful
-> ideas there instead of starting new feature work in this repository. See
+> ideas there; do not start new feature work here. See
 > [DEPRECATED.md](DEPRECATED.md).
 
-Thanks for helping with **dualcut** — the GNOME video editor with dual usage:
-edit manually in the timeline/inspector, or programmatically via a live JSON
-document, TypeScript scripts, and an HTTP API.
+Thank you for your help with **dualcut**, the GNOME video editor. Edit manually in the timeline/inspector, or programmatically via a JSON document, TypeScript, or an HTTP API.
 
 This guide covers how to build, what to read before you start, and what CI
 checks your contribution must pass.
@@ -29,12 +27,10 @@ Never post account credentials or API keys in issues or pull requests.
 
 Read these — they are short and will save you (and reviewers) time:
 
-- **[CONTEXT.md](CONTEXT.md)** — the domain glossary. The words used across
-  the document schema, engine, UI, and docs have exact meanings; when they
-  appear in code or issues, they mean precisely what this file says.
-- **[AGENTS.md](AGENTS.md)** — how the project document works and the
-  surfaces for editing it (file / HTTP / TS scripts). Required reading if
-  your change touches the document model, ops, or rendering.
+- **[CONTEXT.md](CONTEXT.md)** — the domain glossary. Each word has an exact meaning in the schema, engine, UI, and docs.
+  A word keeps that meaning in code and issues.
+- **[AGENTS.md](AGENTS.md)** — how the project document works and the surfaces to edit it (file / HTTP / TS scripts).
+  Read it if your change touches the document model, ops, or renderer.
 - **[PARITY.md](PARITY.md)** — where dualcut stands against mainstream
   editors, split GUI vs. backend. Check it if your change adds a feature.
 - **[ROADMAP.md](ROADMAP.md)** — the native, GPU-accelerated rewrite plan.
@@ -77,7 +73,7 @@ package list and validation commands.
    `git checkout -b fix/crossfade-offset` or `feat/export-webm`.
 2. **Keep commits focused** and sign them with DCO:
    `git commit -s` (your commit must carry a `Signed-off-by` trailer).
-3. **Run the checks CI will run** before pushing:
+3. **Run the checks CI will run** before you push:
 
    ```sh
    # 1. Schema copies must be byte-identical to the agent skill bundle
@@ -94,7 +90,7 @@ package list and validation commands.
    (cd engine && cargo build --release --features vector)
    ```
 
-4. **Open a PR** describing what changed and why; link any related issue.
+4. **Open a PR** and describe what changed and why; link any related issue.
 
 ### If you change the schema
 
@@ -105,8 +101,7 @@ fails if they drift.
 
 ### If you change docs
 
-- User-facing behavior belongs in `docs/USER_GUIDE.md`; screenshots are
-  regenerated automatically on every release.
+- User-facing behavior belongs in `docs/USER_GUIDE.md`; the build regenerates screenshots on every release.
 - Recipes (e.g. auto-captions) live in `docs/recipes/`.
 - Architectural decisions go in `docs/adr/`.
 
@@ -117,6 +112,6 @@ TunaOS organization (see the [org-level Code of Conduct](https://github.com/tuna
 
 ## Questions?
 
-Open an issue — the maintainers and the automated hive agents monitor the
+Open an issue — the maintainers and the automated hive agents all monitor the
 tracker. For anything about the document model specifically, `CONTEXT.md`
 and `AGENTS.md` are the authoritative references.

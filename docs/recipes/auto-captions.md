@@ -2,15 +2,9 @@
 
 Transcribe a clip's audio with any local speech-to-text tool and land
 the segments as styled text clips on a `subtitles` overlay track. This
-recipe is the integration point for headless/agent workflows driving
-the HTTP API from outside the app.
+This recipe is the integration point for headless/agent workflows that drive the HTTP API from outside the app.
 
-The GUI's *Generate Captions…* menu action (#37) is a separate, simpler
-path for interactive use: the Flatpak build bundles a CPU-only
-whisper.cpp (`/app/bin/whisper-cli`) and a small ggml model
-(`/app/share/dualcut/models/ggml-tiny.en-q5_1.bin`), so it works with
-no install. `DUALCUT_WHISPER_MODEL` overrides the model path for either
-the bundled or a self-installed whisper-cli.
+The GUI's *Generate Captions…* menu action (#37) is a simpler path for interactive use. The Flatpak build bundles a CPU-only whisper.cpp (`/app/bin/whisper-cli`) and a small ggml model (`/app/share/dualcut/models/ggml-tiny.en-q5_1.bin`), so it works with no install. `DUALCUT_WHISPER_MODEL` overrides the model path for either the bundled or a self-installed whisper-cli.
 
 ## 1. Extract the audio
 
@@ -21,7 +15,7 @@ dualcut-render project.json /tmp/voice.wav wav
 
 ## 2. Transcribe with timestamps
 
-Any tool emitting timed segments works; whisper.cpp example:
+Any tool that emits timed segments works; whisper.cpp example:
 
 ```sh
 whisper-cli -m ggml-base.en.bin -f /tmp/voice.wav --output-json /tmp/voice.json
@@ -64,14 +58,10 @@ req = urllib.request.Request(
 urllib.request.urlopen(req)
 ```
 
-The running editor hot-reloads with the subtitles in place — review
-them on the timeline, retime by dragging, restyle via a caption def.
+The editor hot-reloads with the subtitles in place — review them on the timeline, retime via clip moves, restyle via a caption def.
 
 ## Notes
 
-- Outline + center alignment (v0.20.0 text styling) keeps captions
-  readable over any footage.
-- For burned-in styling shared across captions, make a `caption` def
-  and emit `compref` clips instead of raw text clips.
-- Editing the project file on disk works identically if the HTTP API
-  is off; the app watches the file.
+- Outline + center alignment for captions (since v0.20.0) keeps them readable over any footage.
+- For burned-in style shared across captions, make a `caption` def and emit `compref` clips instead of raw text clips.
+- If the HTTP API is off, edit the project file on disk instead; the app watches the file.
